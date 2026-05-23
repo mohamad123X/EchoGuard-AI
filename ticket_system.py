@@ -2,14 +2,12 @@ import discord
 from discord.ui import View, Button, Modal, TextInput
 
 class TicketPanelView(View):
-    def __init__(self):
-        super().__init__(timeout=None)
+    def __init__(self): super().__init__(timeout=None)
 
     @discord.ui.button(label="📩 فتح تذكرة دعم", style=discord.ButtonStyle.primary, custom_id="open_ticket_btn_primary")
     async def open_ticket_button(self, interaction: discord.Interaction, button: Button):
         category = discord.utils.get(interaction.guild.categories, name="التذاكر المفتوحة")
-        if not category:
-            category = await interaction.guild.create_category("التذاكر المفتوحة")
+        if not category: category = await interaction.guild.create_category("التذاكر المفتوحة")
 
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
@@ -22,7 +20,6 @@ class TicketPanelView(View):
             category=category, 
             overwrites=overwrites
         )
-        
         await interaction.response.send_message(f"✅ تم فتح تذكرتك بنجاح: {ticket_channel.mention}", ephemeral=True)
         
         embed = discord.Embed(
@@ -33,8 +30,7 @@ class TicketPanelView(View):
         await ticket_channel.send(embed=embed)
 
 class TicketSetupView(View):
-    def __init__(self):
-        super().__init__(timeout=None)
+    def __init__(self): super().__init__(timeout=None)
 
     async def send_ticket_panel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         embed = discord.Embed(
@@ -42,22 +38,13 @@ class TicketSetupView(View):
             description="> **هل تواجه مشكلة أو تحتاج إلى مساعدة؟**\n> يرجى الضغط على الزر أدناه لفتح تذكرة خاصة والتواصل بشكل مباشر مع فريق الإدارة.",
             color=discord.Color.from_str("#7000ff")
         )
-        # صورة مخصصة للتذاكر (Cyberpunk tech vibe) تختلف عن الترحيب
         embed.set_image(url="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop") 
-        
         await channel.send(embed=embed, view=TicketPanelView())
         await interaction.response.send_message(f"✅ تم إعداد لوحة التذاكر بنجاح في القناة: {channel.mention}", ephemeral=True)
 
-    @discord.ui.select(
-        cls=discord.ui.ChannelSelect,
-        channel_types=[discord.ChannelType.text],
-        placeholder="1️⃣ اختر قناة التذاكر الموجودة...",
-        min_values=1,
-        max_values=1
-    )
+    @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="1️⃣ اختر قناة التذاكر الموجودة...")
     async def select_existing_channel(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        selected_channel = select.values[0]
-        await self.send_ticket_panel(interaction, selected_channel)
+        await self.send_ticket_panel(interaction, select.values[0])
 
     @discord.ui.button(label="2️⃣ أو إنشاء قناة جديدة ✨", style=discord.ButtonStyle.success, row=1)
     async def create_new_channel(self, interaction: discord.Interaction, button: Button):
@@ -75,5 +62,4 @@ class TicketSetupView(View):
                 }
                 new_channel = await modal_inter.guild.create_text_channel(name, overwrites=overwrites)
                 await self.parent_view.send_ticket_panel(modal_inter, new_channel)
-        
         await interaction.response.send_modal(NewTicketModal(self))
