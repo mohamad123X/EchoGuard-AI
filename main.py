@@ -11,17 +11,17 @@ class MyBot(commands.Bot):
         intents.message_content = True
         super().__init__(command_prefix="!", intents=intents)
         
-        # قاعدة بيانات مؤقتة لحفظ إعدادات السيرفر (يُفضل لاحقاً استبدالها بـ SQLite أو MongoDB)
+        # قاعدة بيانات مؤقتة لحفظ إعدادات السيرفر
         self.db = {}
 
     # هذه الدالة ضرورية لتسجيل الأزرار الدائمة ومزامنة أوامر السلاش
     async def setup_hook(self):
-        # تسجيل واجهات الأزرار لتبقى تعمل حتى بعد إعادة التشغيل
+        # تمرير self (البوت) إلى الـ Views التي تحتاج الوصول لقاعدة البيانات
         self.add_view(DashboardView(self))
-        self.add_view(TicketPanelView())
+        self.add_view(TicketPanelView(self))
         self.add_view(VerificationPanelView(role_id=0))
         
-        # مزامنة أوامر السلاش (Slash Commands) مع سيرفرات الديسكورد
+        # مزامنة أوامر السلاش (Slash Commands)
         await self.tree.sync()
         print("✅ تم مزامنة أوامر السلاش بنجاح.")
 
@@ -60,7 +60,7 @@ async def on_ready():
 # 💻 إضافة أمر السلاش لاستدعاء اللوحة يدوياً
 # ==========================================
 @bot.tree.command(name="panel", description="إظهار لوحة تحكم البوت (للإدارة فقط)")
-@discord.app_commands.default_permissions(administrator=True) # حماية الأمر للمدراء فقط
+@discord.app_commands.default_permissions(administrator=True) 
 async def show_panel(interaction: discord.Interaction):
     embed = discord.Embed(
         title="💠 مركز التحكم الرئيسي",
