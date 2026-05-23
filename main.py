@@ -5,30 +5,39 @@ from ui_setup import DashboardView, TicketPanelView, VerificationPanelView
 
 class MyBot(commands.Bot):
     def __init__(self):
+        # تفعيل الـ Intents الضرورية لعمل البوت
         intents = discord.Intents.default()
         intents.members = True
         intents.message_content = True
         super().__init__(command_prefix="!", intents=intents)
+        
+        # قاعدة بيانات مؤقتة لحفظ إعدادات السيرفر (يُفضل لاحقاً استبدالها بـ SQLite أو MongoDB)
         self.db = {}
 
-    # هذه الدالة ضرورية للأزرار الدائمة لتعمل بعد إعادة تشغيل البوت
+    # هذه الدالة ضرورية لتسجيل الأزرار الدائمة ومزامنة أوامر السلاش
     async def setup_hook(self):
+        # تسجيل واجهات الأزرار لتبقى تعمل حتى بعد إعادة التشغيل
         self.add_view(DashboardView(self))
         self.add_view(TicketPanelView())
         self.add_view(VerificationPanelView(role_id=0))
+        
+        # مزامنة أوامر السلاش (Slash Commands) مع سيرفرات الديسكورد
+        await self.tree.sync()
+        print("✅ تم مزامنة أوامر السلاش بنجاح.")
 
+# إنشاء كائن البوت
 bot = MyBot()
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user} | Sentinel System Online 🚀")
     
-    # المرور على جميع السيرفرات التي يتواجد فيها البوت
+    # المرور على جميع السيرفرات التي يتواجد فيها البوت (للنظام التلقائي)
     for guild in bot.guilds:
         # البحث عن قناة لوحة التحكم
         dashboard_channel = discord.utils.get(guild.text_channels, name="⚙・لوحة-التحكم")
         
-        # إذا لم تكن القناة موجودة، نقوم بإنشائها بصلاحيات للإدارة فقط (مخفية عن الأعضاء)
+        # إذا لم تكن القناة موجودة، نقوم بإنشائها بصلاحيات للإدارة فقط
         if not dashboard_channel:
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(read_messages=False),
@@ -47,9 +56,22 @@ async def on_ready():
         )
         await dashboard_channel.send(embed=embed, view=DashboardView(bot))
 
+# ==========================================
+# 💻 إضافة أمر السلاش لاستدعاء اللوحة يدوياً
+# ==========================================
+@bot.tree.command(name="panel", description="إظهار لوحة تحكم البوت (للإدارة فقط)")
+@discord.app_commands.default_permissions(administrator=True) # حماية الأمر للمدراء فقط
+async def show_panel(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="💠 مركز التحكم الرئيسي",
+        description="مرحباً بك في لوحة الإدارة الذكية.\nاختر النظام الذي تريد إعداده:",
+        color=discord.Color.from_str("#00f2ff")
+    )
+    # إرسال اللوحة كرسالة مخفية تظهر للإداري الذي كتب الأمر فقط
+    await interaction.response.send_message(embed=embed, view=DashboardView(bot), ephemeral=True)
 
 # ==========================================
-# سحب التوكن من المتغيرات (Variables) في Railway وتشغيل البوت
+# سحب التوكن من المتغيرات (Variables) وتشغيل البوت
 # ==========================================
 token = os.getenv("DISCORD_TOKEN")
 
