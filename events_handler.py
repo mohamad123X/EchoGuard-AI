@@ -8,7 +8,8 @@ class EventsHandler(commands.Cog):
     # 1. حدث دخول الأعضاء (الترحيب الاحترافي + الرتبة التلقائية)
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        g_id = member.guild.id
+        # تحويل الـ ID إلى نص ليتوافق مع قاعدة البيانات ويتجنب الأخطاء
+        g_id = str(member.guild.id) 
         data = self.bot.db.get(g_id, {})
         
         # --- تفعيل الرتبة التلقائية (Auto-Role) ---
@@ -28,7 +29,9 @@ class EventsHandler(commands.Cog):
         rules_channel_id = data.get('rules_channel')
         rules_mention = f"<#{rules_channel_id}>" if rules_channel_id else "`قناة القوانين`"
         server_name = member.guild.name
-        banner_url = data.get('banner_url', "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1000&auto=format&fit=crop")
+        
+        # استخدام صورة EchoGuard كخلفية افتراضية فخمة للترحيب
+        banner_url = data.get('banner_url', "https://i.postimg.cc/SNrRy2JS/chouaibchou13-pindown-io-1779531490.png")
         
         embed = discord.Embed(
             title=f"✨ أهلاً بك في {server_name}! ✨",
@@ -38,31 +41,37 @@ class EventsHandler(commands.Cog):
                 f"📌 **يرجى مراجعة القوانين والأنظمة هنا:** {rules_mention}\n"
                 f"💬 **نتمنى لك قضاء وقت ممتع وتفاعل أسطوري معنا!**"
             ),
-            color=discord.Color.from_str("#ff00a0") # نيون وردي جذاب للترحيب
+            color=discord.Color.from_str("#00f2ff") # لون أزرق نيون متناسق مع هوية البوت
         )
         if member.avatar: embed.set_thumbnail(url=member.avatar.url)
         embed.set_image(url=banner_url)
-        embed.set_footer(text=f"Welcome to {server_name}", icon_url=member.guild.icon.url if member.guild.icon else None)
+        embed.set_footer(text=f"Welcome to {server_name} | EchoGuard-AI", icon_url=member.guild.icon.url if member.guild.icon else None)
         
         await channel.send(content=f"👋 حياك الله {member.mention}!", embed=embed)
 
 
-    # 2. حدث الرد التلقائي (Auto-Responder)
+    # 2. حدث الرد التلقائي (Auto-Responder) ذكي ومطور
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild: return
         
-        g_id = message.guild.id
+        g_id = str(message.guild.id)
         auto_responses = self.bot.db.get(g_id, {}).get('auto_responses', {})
         
-        msg_content = message.content.strip()
-        if msg_content in auto_responses:
-            await message.channel.send(auto_responses[msg_content])
+        # تحويل رسالة العضو لحروف صغيرة وتجاهل المسافات الإضافية لضمان تطابق أذكى
+        msg_content = message.content.strip().lower()
+        
+        for keyword, response in auto_responses.items():
+            # إذا كانت الكلمة المفتاحية موجودة كجزء من الرسالة
+            if keyword.strip().lower() in msg_content:
+                await message.channel.send(response)
+                break # يتوقف لكي لا يرد البوت أكثر من مرة على نفس الرسالة
 
 
     # 3. أحداث السجل والتقارير المفصلة (Log System)
     async def send_log(self, guild: discord.Guild, embed: discord.Embed):
-        log_chan_id = self.bot.db.get(guild.id, {}).get('log_channel')
+        g_id = str(guild.id)
+        log_chan_id = self.bot.db.get(g_id, {}).get('log_channel')
         if log_chan_id:
             channel = guild.get_channel(log_chan_id)
             if channel: await channel.send(embed=embed)
