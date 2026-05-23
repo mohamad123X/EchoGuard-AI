@@ -101,22 +101,19 @@ class EventsHandler(commands.Cog):
     # ---------------- 1. نظام الرد التلقائي الذكي ----------------
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # تجاهل رسائل البوتات والرسائل الخاصة
         if message.author.bot or not message.guild: return
         
         g_id = str(message.guild.id)
         auto_responses = self.bot.db.get(g_id, {}).get('auto_responses', {})
         
-        # إذا لم يكن هناك ردود محفوظة، تخطى العملية
         if not auto_responses: return
 
-        # تحويل رسالة العضو لحروف صغيرة وتجاهل المسافات الإضافية لضمان تطابق أذكى
         msg_content = message.content.strip().lower()
         
         for keyword, response in auto_responses.items():
             if keyword in msg_content:
                 await message.channel.send(response)
-                break # يتوقف لكي لا يرد البوت أكثر من مرة على نفس الرسالة في حال وجود كلمتين مفتاحيتين
+                break
 
     # ---------------- 2. سجلات الأعضاء والترحيب والتحقق ----------------
 
@@ -130,31 +127,55 @@ class EventsHandler(commands.Cog):
         if auto_role_id:
             role = member.guild.get_role(auto_role_id)
             if role:
-                try: await member.add_roles(role)
-                except Exception: pass
+                try: 
+                    await member.add_roles(role)
+                except Exception: 
+                    pass
                 
-        # نظام الترحيب بالبنر
+        # نظام الترحيب المطور المتطابق مع الصورة تماماً
         welcome_channel_id = data.get('welcome_channel')
         channel = member.guild.get_channel(welcome_channel_id)
         if channel:
             banner_url = data.get('banner_url') or "https://i.postimg.cc/1Xd9qsSy/download-(14).jpg"
-            embed = discord.Embed(title="✨ أهلاً بك! ✨", description=f"> **مرحباً {member.mention}!**", color=discord.Color.from_str("#00f2ff"))
-            embed.set_image(url=banner_url)
-            await channel.send(content=f"👋 حياك الله {member.mention}!", embed=embed)
+            
+            # تنسيق النص والأسطر بدقة هندسية متطابقة مع الصورة
+            desc = (
+                f"**Welcome** {member.mention} **to {member.guild.name}!**\n"
+                f"You are member **{member.guild.member_count}**🎉\n"
+                "------------------------------------------------\n"
+                "📌 Please read the `#rules`\n"
+                "💬 Chat & have fun\n"
+                "🚀 Enjoy"
+            )
 
-        # سجل الدخول وكشف الحسابات الوهمية
+            embed = discord.Embed(
+                description=desc, 
+                color=discord.Color.from_str("#1a3d36"),
+                timestamp=datetime.now(timezone.utc)
+            )
+            embed.set_image(url=banner_url)
+            
+            # إظهار أيقونة وصورة العضو الجديد في الزاوية العلوية اليمنى بشكل صحيح
+            if member.display_avatar:
+                embed.set_thumbnail(url=member.display_avatar.url)
+            
+            try: 
+                await channel.send(embed=embed)
+            except Exception: 
+                pass
+
+        # سجل الدخول وكشف الحسابات الوهمية لإدارة السيرفر
         acc_age = (datetime.now(timezone.utc) - member.created_at).days
-        embed = discord.Embed(title="📥 دخول عضو", color=discord.Color.green())
-        embed.add_field(name="العضو:", value=f"{member.mention} ({member.name})")
-        embed.add_field(name="حالة الحساب:", value="🔴 **حساب جديد (وهمي؟)**" if acc_age < 7 else f"🟢 آمن (منذ {acc_age} يوم)")
-        await self.send_webhook_log(member.guild, embed, view=UserProfileView(member))
+        embed_log = discord.Embed(title="📥 دخول عضو", color=discord.Color.green())
+        embed_log.add_field(name="العضو:", value=f"{member.mention} ({member.name})")
+        embed_log.add_field(name="حالة الحساب:", value="🔴 **حساب جديد (وهمي؟)**" if acc_age < 7 else f"🟢 آمن (منذ {acc_age} يوم)")
+        await self.send_webhook_log(member.guild, embed_log, view=UserProfileView(member))
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         embed = discord.Embed(title="📤 خروج عضو", color=discord.Color.red())
         embed.add_field(name="العضو:", value=f"{member.mention} ({member.name})")
         
-        # الفحص الذكي: هل تم طرده أم خرج بنفسه؟
         action = "خرج طوعاً من السيرفر🚶"
         if member.guild.me.guild_permissions.view_audit_log:
             async for entry in member.guild.audit_logs(limit=3, action=discord.AuditLogAction.kick):
@@ -179,7 +200,6 @@ class EventsHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        # تغيير اللقب (Nickname)
         if before.nick != after.nick:
             embed = discord.Embed(title="🏷️ تغيير اللقب (Nickname)", color=discord.Color.dark_gray())
             embed.add_field(name="العضو:", value=after.mention)
@@ -187,14 +207,12 @@ class EventsHandler(commands.Cog):
             embed.add_field(name="اللقب الجديد:", value=after.nick or after.name)
             await self.send_webhook_log(after.guild, embed)
 
-        # التايم أوت (Mute/Timeout)
         if not before.is_timed_out() and after.is_timed_out():
             embed = discord.Embed(title="🤐 تم إسكات عضو (Timeout)", color=discord.Color.orange())
             embed.add_field(name="العضو:", value=after.mention)
             embed.add_field(name="ينتهي في:", value=f"<t:{int(after.timed_out_until.timestamp())}:R>")
             await self.send_webhook_log(after.guild, embed)
 
-        # التغيير في الرتب (Roles) + زر التراجع الذكي
         if before.roles != after.roles:
             added = [r for r in after.roles if r not in before.roles]
             removed = [r for r in before.roles if r not in after.roles]
@@ -217,7 +235,6 @@ class EventsHandler(commands.Cog):
         embed.add_field(name="الكاتب:", value=message.author.mention, inline=True)
         embed.add_field(name="القناة:", value=message.channel.mention, inline=True)
         
-        # البحث في الـ Audit Log عن الإداري الذي حذف الرسالة
         deleter = "الكاتب نفسه (أو بوت)"
         if message.guild.me.guild_permissions.view_audit_log:
             async for entry in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete):
@@ -231,7 +248,6 @@ class EventsHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
-        # تنبيه ذكي للمسح الجماعي (Purge)
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
         embed = discord.Embed(
@@ -251,7 +267,6 @@ class EventsHandler(commands.Cog):
         if "ticket" in channel.name.lower():
             embed.description = "⚠️ **تنبيه: هذه القناة تبدو كتذكرة دعم فني!**"
             
-        # إرفاق واجهة الاستعادة الفورية للقناة بالقسم الخاص بها
         view = RestoreChannelView(channel.name, channel.type, channel.category.id if channel.category else None)
         await self.send_webhook_log(channel.guild, embed, view=view)
 
@@ -270,7 +285,6 @@ class EventsHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
-        # العرض الذكي لصلاحيات الرتب الحساسة (Diff View) الملون
         if before.permissions != after.permissions:
             embed = discord.Embed(title="🛡️ تعديل صلاحيات رتبة حساسة", color=discord.Color.yellow())
             embed.add_field(name="الرتبة:", value=after.mention, inline=False)
