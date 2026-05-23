@@ -1,49 +1,58 @@
-🤖 Sentinel Bot - نظام إدارة السيرفرات الذكي
+<h1 align="left">Sentinel Bot 🤖</h1>
 
-هذا البوت مصمم ليكون نظاماً متكاملاً لإدارة سيرفرات الديسكورد، حيث يوفر أنظمة (ترحيب، تذاكر، وتحقق) بتصميم عصري واحترافي.
+###
 
-🚀 المميزات
+<p align="left">Sentinel Bot هو نظام إداري متكامل لسيرفرات الديسكورد، مصمم لتقديم تجربة تحكم سلسة، احترافية، وآمنة للإداريين.</p>
 
-نظام الترحيب التلقائي: إنشاء قنوات ترحيب وتخصيص البانر والرسائل.
+###
 
-نظام التذاكر (Tickets): دعم فني متقدم مع إشعارات للإدارة.
+<h2 align="left">Features</h2>
 
-نظام التحقق (Verification): نظام حماية (Captcha) لمنع دخول البوتات.
+###
 
-لوحة تحكم (Dashboard): واجهة أزرار مخفية للإدارة للتحكم في كافة الأنظمة.
+<p align="left">
+✨ <b>نظام الترحيب:</b> ترحيب تلقائي بالأعضاء مع إمكانية تخصيص البانرات.<br>
+🎫 <b>نظام التذاكر:</b> مركز دعم فني متقدم مع إشعارات مباشرة للإدارة.<br>
+🛡️ <b>نظام التحقق:</b> حماية السيرفر من البوتات والمسيئين عبر نظام Captcha.<br>
+⚙️ <b>لوحة تحكم ذكية:</b> إعداد كافة الأنظمة عبر واجهة تفاعلية بسيطة (Buttons & Modals).
+</p>
 
-⚙️ متطلبات التشغيل
+###
 
-يجب أن يحتوي ملف requirements.txt على المكتبات التالية:
+<h2 align="left">Built With</h2>
 
-discord.py
-python-dotenv
+###
 
+<div align="left">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" height="40" alt="python logo" />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/discordjs/discordjs-original.svg" height="40" alt="discord.py logo" />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" height="40" alt="git logo" />
+  <img width="12" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" height="40" alt="github logo" />
+</div>
 
-🛠️ خطوات التشغيل على Railway
+###
 
-رفع المشروع: ارفع ملفات البوت (main.py, ui_setup.py, requirements.txt) إلى GitHub.
+<h2 align="left">Getting Started</h2>
 
-الربط: قم بإنشاء مشروع جديد في Railway وقم بربطه بالمستودع الخاص بك.
+###
 
-المتغيرات (Variables): انتقل إلى إعدادات المشروع في Railway وأضف متغير جديد:
+<p align="left">
+1. قم بدعوة البوت للسيرفر الخاص بك.<br>
+2. سيقوم البوت تلقائياً بإنشاء قناة <code>⚙・لوحة-التحكم</code>.<br>
+3. استخدم الأزرار في اللوحة لإعداد الأنظمة المطلوبة، أو اكتب الأمر <code>/panel</code> في أي قناة لإظهارها.
+</p>
 
-DISCORD_TOKEN: [ضع توكن البوت هنا]
+###
 
-التشغيل: سيقوم Railway تلقائياً بتثبيت المكتبات وتشغيل main.py.
+<h2 align="left">Status</h2>
 
-💻 كيفية الاستخدام
+###
 
-بمجرد تشغيل البوت، سيبحث عن قناة باسم ⚙・لوحة-التحكم ويرسل فيها واجهة التحكم.
+<p align="left">
+🚀 <b>Sentinel Bot</b> قيد التطوير المستمر لتحسين الأداء وإضافة مميزات جديدة.
+</p>
 
-يمكنك أيضاً استخدام أمر السلاش في أي قناة: /panel لإظهار لوحة التحكم (خاص بالإدارة).
-
-💡 ملاحظات برمجية
-
-البوت يعتمد على setup_hook لضمان عمل الأزرار بشكل دائم حتى بعد إعادة التشغيل.
-
-يتم حفظ إعدادات السيرفر في قاعدة بيانات مؤقتة (self.db).
-
-للمشاريع الكبيرة، يوصى بالانتقال إلى قاعدة بيانات خارجية مثل MongoDB.
-
-تم التطوير بواسطة خبير برمجيات.
+###
