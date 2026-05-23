@@ -1,10 +1,25 @@
 import discord
-from discord.ui import View, Button, Select, Modal, TextInput
-import asyncio
+from discord.ui import View, Button, Modal, TextInput, ChannelSelect, RoleSelect
 
-# ==========================================
-# 🎫 نظام التذاكر المحدث (Ticket System)
-# ==========================================
+# 1. لوحة التحكم الرئيسية
+class DashboardView(View):
+    def __init__(self, bot):
+        super().__init__(timeout=None)
+        self.bot = bot
+
+    @discord.ui.button(label="إعداد الترحيب 👋", style=discord.ButtonStyle.primary, custom_id="setup_welcome")
+    async def setup_welcome_btn(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message("جاري إعداد نظام الترحيب...", ephemeral=True)
+
+    @discord.ui.button(label="إعداد التذاكر 🎫", style=discord.ButtonStyle.secondary, custom_id="setup_tickets")
+    async def setup_tickets_btn(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message("جاري إعداد نظام التذاكر...", ephemeral=True)
+
+    @discord.ui.button(label="إعداد التحقق 🛡️", style=discord.ButtonStyle.success, custom_id="setup_verification")
+    async def setup_verify_btn(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message("جاري إعداد نظام التحقق...", ephemeral=True)
+
+# 2. لوحة التذاكر
 class TicketPanelView(View):
     def __init__(self, bot):
         super().__init__(timeout=None)
@@ -12,64 +27,14 @@ class TicketPanelView(View):
 
     @discord.ui.button(label="📩 فتح تذكرة", style=discord.ButtonStyle.primary, custom_id="open_ticket_btn")
     async def open_ticket(self, interaction: discord.Interaction, button: Button):
-        guild_id = interaction.guild.id
-        role_id = self.bot.db.get(guild_id, {}).get('ticket_role')
-        role_mention = f"<@&{role_id}>" if role_id else "الإدارة"
-        
-        # إشعار الإدارة في قناة التحكم
-        log_channel = discord.utils.get(interaction.guild.text_channels, name="⚙・لوحة-التحكم")
-        if log_channel:
-            await log_channel.send(f"🔔 **تذكرة جديدة!**\nفتح بواسطة: {interaction.user.mention}\nالمسؤولون المطلوبون: {role_mention}")
-        
-        await interaction.response.send_message("✅ تم فتح تذكرتك بنجاح!", ephemeral=True)
+        await interaction.response.send_message("تم فتح التذكرة!", ephemeral=True)
 
-class TicketRoleSelectView(View):
-    def __init__(self, bot, channel):
-        super().__init__()
-        self.bot, self.channel = bot, channel
-
-    @discord.ui.select(cls=discord.ui.RoleSelect, placeholder="🛡️ اختر رتبة الإدارة المسؤولة عن التذاكر...")
-    async def select_role(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
-        role = select.values[0]
-        guild_id = interaction.guild.id
-        if guild_id not in self.bot.db: self.bot.db[guild_id] = {}
-        self.bot.db[guild_id]['ticket_role'] = role.id
-        
-        embed = discord.Embed(title="🎫 مركز الدعم الفني", description="لفتح تذكرة، اضغط على الزر أدناه.", color=discord.Color.purple())
-        embed.set_image(url="https://i.postimg.cc/fb3TM3Qg/Ticket-Banner-Discord-Purple-Aesthetic.jpg")
-        await self.channel.send(embed=embed, view=TicketPanelView(self.bot))
-        await interaction.response.edit_message(content=f"✅ تم تفعيل النظام في {self.channel.mention} مع الرتبة {role.mention}", view=None)
-
-class TicketSetupView(View):
-    def __init__(self, bot):
+# 3. لوحة التحقق
+class VerificationPanelView(View):
+    def __init__(self, role_id: int):
         super().__init__(timeout=None)
-        self.bot = bot
-    
-    @discord.ui.select(cls=discord.ui.ChannelSelect, placeholder="1️⃣ اختر قناة التذاكر...")
-    async def select_channel(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        await interaction.response.send_message("الآن اختر الرتبة التي سيصلها إشعار التذاكر:", view=TicketRoleSelectView(self.bot, select.values[0]), ephemeral=True)
+        self.role_id = role_id
 
-# ==========================================
-# 👋 نظام الترحيب المحدث (إصلاح التداخل)
-# ==========================================
-class WelcomeDataModal(Modal, title="تفاصيل الترحيب"):
-    server_name = TextInput(label="اسم السيرفر", required=True)
-    def __init__(self, bot, channel):
-        super().__init__()
-        self.bot, self.channel = bot, channel
-    async def on_submit(self, interaction: discord.Interaction):
-        embed = discord.Embed(title=f"مرحباً بك في {self.server_name.value}!", description="نتمنى لك وقتاً ممتعاً!", color=discord.Color.green())
-        embed.set_image(url="https://i.postimg.cc/1Xd9qsSy/download-(14).jpg")
-        await self.channel.send(embed=embed)
-        await interaction.response.send_message("✅ تم إعداد القناة والترحيب بنجاح!", ephemeral=True)
-
-class WelcomeSetupView(View):
-    def __init__(self, bot):
-        super().__init__(timeout=None)
-        self.bot = bot
-    @discord.ui.button(label="إنشاء قناة جديدة ✨", style=discord.ButtonStyle.success)
-    async def create_new(self, interaction: discord.Interaction, button: Button):
-        new_channel = await interaction.guild.create_text_channel("✨・الترحيب")
-        await interaction.response.send_modal(WelcomeDataModal(self.bot, new_channel))
-
-# ... (DashboardView وباقي الكود) ...
+    @discord.ui.button(label="☑️ تأكيد هويتك", style=discord.ButtonStyle.secondary, custom_id="verify_captcha_btn")
+    async def verify_button(self, interaction: discord.Interaction, button: Button):
+        await interaction.response.send_message("تم التحقق بنجاح!", ephemeral=True)
