@@ -1,7 +1,8 @@
 import discord
 import os
 from discord.ext import commands
-from ui_setup import DashboardView
+# تمت إضافة VerificationPanelView هنا لربط نظام التحقق
+from ui_setup import DashboardView, VerificationPanelView
 from ticket_system import TicketPanelView
 
 class MyBot(commands.Bot):
@@ -20,6 +21,8 @@ class MyBot(commands.Bot):
         # تسجيل الأزرار الدائمة لتعمل دائماً
         self.add_view(DashboardView(self))
         self.add_view(TicketPanelView())
+        # تسجيل لوحة التحقق لتظل فعالة
+        self.add_view(VerificationPanelView())
         
         # تحميل ملف الترحيب (لم يكن يعمل في الكود السابق)
         try:
