@@ -1,16 +1,14 @@
 import discord
 from discord.ui import View, Button, Modal, TextInput
 
-# --- 1. واجهة العضو (القائمة المنسدلة لاختيار القسم) ---
+# --- 1. واجهة العضو ---
 class TicketCategorySelectView(View):
     def __init__(self, categories):
         super().__init__(timeout=None)
-        # إذا لم تقم الإدارة بإضافة أقسام، نضع قسم افتراضي
         if not categories:
             categories = ["دعم عام"]
             
         options = [discord.SelectOption(label=cat, value=cat, emoji="📩") for cat in categories]
-        
         select = discord.ui.Select(placeholder="اختر القسم المناسب لمشكلتك...", options=options, custom_id="ticket_category_dropdown")
         select.callback = self.select_callback
         self.add_item(select)
@@ -19,7 +17,6 @@ class TicketCategorySelectView(View):
         category_name = interaction.data["values"][0]
         guild = interaction.guild
         
-        # إنشاء تصنيف الديسكورد للتذاكر إذا لم يكن موجوداً
         discord_category = discord.utils.get(guild.categories, name="التذاكر المفتوحة")
         if not discord_category: 
             discord_category = await guild.create_category("التذاكر المفتوحة")
@@ -46,7 +43,7 @@ class TicketCategorySelectView(View):
         await ticket_channel.send(embed=embed)
 
 
-# --- 2. واجهة العضو (الزر الأساسي لفتح التذكرة) ---
+# --- 2. الزر الأساسي لفتح التذكرة ---
 class TicketPanelView(View):
     def __init__(self, bot=None):
         super().__init__(timeout=None)
@@ -54,12 +51,10 @@ class TicketPanelView(View):
 
     @discord.ui.button(label="📩 فتح تذكرة", style=discord.ButtonStyle.primary, custom_id="open_ticket_btn_primary")
     async def open_ticket_button(self, interaction: discord.Interaction, button: Button):
-        # قراءة الأقسام التي حفظتها الإدارة
         g_id = str(interaction.guild.id)
         bot_instance = self.bot or interaction.client
         categories = bot_instance.db.get(g_id, {}).get('ticket_categories', [])
         
-        # عرض القائمة المنسدلة للعضو (مخفية فقط له)
         await interaction.response.send_message(
             "يرجى تحديد نوع التذكرة التي ترغب بفتحها من القائمة أدناه:", 
             view=TicketCategorySelectView(categories), 
@@ -67,7 +62,7 @@ class TicketPanelView(View):
         )
 
 
-# --- 3. واجهة الإدارة (لإعداد القناة والأقسام) ---
+# --- 3. واجهة الإدارة (تم الإصلاح) ---
 class TicketSetupView(View):
     def __init__(self, bot):
         super().__init__(timeout=None)
@@ -79,18 +74,23 @@ class TicketSetupView(View):
             description="> **هل تواجه مشكلة أو تحتاج إلى مساعدة؟**\n> يرجى الضغط على الزر أدناه لاختيار القسم المناسب وفتح تذكرة تواصل.",
             color=discord.Color.from_str("#7000ff")
         )
-        embed.set_image(url="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop") 
+        # صورة التذاكر الافتراضية الخاصة بك
+        embed.set_image(url="https://i.postimg.cc/fb3TM3Qg/Ticket-Banner-Discord-Purple-Aesthetic.jpg") 
         await channel.send(embed=embed, view=TicketPanelView(self.bot))
         await interaction.response.send_message(f"✅ تم إعداد لوحة التذاكر بنجاح في القناة: {channel.mention}", ephemeral=True)
 
     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="1️⃣ اختر قناة التذاكر لوضع الرسالة...")
     async def select_existing_channel(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        await self.send_ticket_panel(interaction, select.values[0])
+        # الإصلاح: جلب كائن القناة الحقيقي
+        channel = interaction.guild.get_channel(select.values[0].id)
+        if not channel:
+            return await interaction.response.send_message("❌ حدث خطأ في العثور على القناة.", ephemeral=True)
+        await self.send_ticket_panel(interaction, channel)
 
     @discord.ui.button(label="➕ إضافة قسم تذاكر جديد", style=discord.ButtonStyle.success, row=1)
     async def add_category_btn(self, interaction: discord.Interaction, button: Button):
         class CategoryModal(Modal, title="إضافة قسم تذاكر للقائمة"):
-            cat_name = TextInput(label="اسم القسم (مثال: دعم فني، شراء، شكوى)", placeholder="اكتب اسم القسم هنا...", required=True)
+            cat_name = TextInput(label="اسم القسم (مثال: دعم فني، شراء)", placeholder="اكتب اسم القسم هنا...", required=True)
             
             def __init__(self, bot_obj):
                 super().__init__()
@@ -102,6 +102,6 @@ class TicketSetupView(View):
                 if 'ticket_categories' not in self.bot.db[g_id]: self.bot.db[g_id]['ticket_categories'] = []
                 
                 self.bot.db[g_id]['ticket_categories'].append(self.cat_name.value.strip())
-                await modal_inter.response.send_message(f"✅ تم إضافة قسم التذاكر: **{self.cat_name.value}** بنجاح! سيظهر الآن للأعضاء.", ephemeral=True)
+                await modal_inter.response.send_message(f"✅ تم إضافة قسم التذاكر: **{self.cat_name.value}** بنجاح!", ephemeral=True)
                 
         await interaction.response.send_modal(CategoryModal(self.bot))
