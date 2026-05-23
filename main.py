@@ -20,10 +20,10 @@ class MyBot(commands.Bot):
         self.db = {'active_giveaways': {}}
 
     async def setup_hook(self):
+        # تسجيل الواجهات الدائمة فقط التي تحتوي على custom_id وبدون timeout
         self.add_view(DashboardView(self))
         self.add_view(TicketPanelView(self)) # تمرير البوت لقراءة الأقسام
         self.add_view(VerificationPanelView())
-        self.add_view(WelcomeSetupView(self))
         self.add_view(GiveawayStaffView())
         self.add_view(GiveawayJoinView())
         
