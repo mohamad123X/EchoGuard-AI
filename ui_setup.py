@@ -22,10 +22,11 @@ class DashboardView(View):
     async def setup_tickets_btn(self, interaction: discord.Interaction, button: Button):
         embed = discord.Embed(
             title="⚙️ إعداد نظام التذاكر",
-            description="الرجاء اختيار قناة وضع رسالة التذاكر للأعضاء:",
+            description="الرجاء اختيار القناة، ثم لا تنسى الضغط على **إضافة قسم تذاكر جديد** لتحديد خيارات القائمة المنسدلة للأعضاء:",
             color=discord.Color.from_str("#7000ff")
         )
-        await interaction.response.send_message(embed=embed, view=TicketSetupView(), ephemeral=True)
+        # تمرير self.bot هنا ضروري لكي يعمل نظام الأقسام
+        await interaction.response.send_message(embed=embed, view=TicketSetupView(self.bot), ephemeral=True)
 
     @discord.ui.button(label="إعداد التحقق 🛡️", style=discord.ButtonStyle.success, custom_id="setup_verification_main")
     async def setup_verify_btn(self, interaction: discord.Interaction, button: Button):
@@ -65,11 +66,12 @@ class DashboardView(View):
                 self.bot = bot_obj
 
             async def on_submit(self, modal_inter: discord.Interaction):
-                g_id = modal_inter.guild.id
+                g_id = str(modal_inter.guild.id)
                 if g_id not in self.bot.db: self.bot.db[g_id] = {}
                 if 'auto_responses' not in self.bot.db[g_id]: self.bot.db[g_id]['auto_responses'] = {}
                 
-                self.bot.db[g_id]['auto_responses'][self.keyword.value.strip()] = self.response.value.strip()
+                # تخزين الكلمة المفتاحية كحروف صغيرة لضمان استجابة البوت بذكاء
+                self.bot.db[g_id]['auto_responses'][self.keyword.value.strip().lower()] = self.response.value.strip()
                 await modal_inter.response.send_message(f"✅ تم حفظ الرد بنجاح! عندما يكتب شخص `{self.keyword.value}` سيرد البوت تلقائياً.", ephemeral=True)
 
         await interaction.response.send_modal(AutoResponderModal(self.bot))
@@ -92,27 +94,28 @@ class WelcomeSetupView(View):
 
     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="1️⃣ اختر قناة الترحيب بالأعضاء...", custom_id="wel_select_chan")
     async def select_welcome_channel(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        g_id = interaction.guild.id
+        g_id = str(interaction.guild.id)
         if g_id not in self.bot.db: self.bot.db[g_id] = {}
         self.bot.db[g_id]['welcome_channel'] = select.values[0].id
-        await interaction.response.send_message("✅ تم تحديد قناة الترحيب بنجاح! الآن اختر قناة القوانين من القائمة نفسها أدناه.", ephemeral=True)
+        await interaction.response.send_message("✅ تم حفظ قناة الترحيب بنجاح! الرجاء اختيار قناة القوانين الآن من القائمة بالأسفل.", ephemeral=True)
 
     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="2️⃣ اختر قناة القوانين (Rules)...", custom_id="wel_select_rules")
     async def select_rules_channel(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        g_id = interaction.guild.id
+        g_id = str(interaction.guild.id)
         if g_id not in self.bot.db: self.bot.db[g_id] = {}
         self.bot.db[g_id]['rules_channel'] = select.values[0].id
         
         # بعد تحديد القوانين، نتيح له خيار إضافة بنر أو إنهاء الإعداد
         class BannerModal(Modal, title="إضافة رابط بنر مخصص"):
-            url = TextInput(label="رابط الصورة/البانر (اتركه فارغاً لافتراضي فخم)", required=False, placeholder="https://...")
+            url = TextInput(label="رابط الصورة/البانر (اتركه فارغاً لافتراضي)", required=False, placeholder="https://...")
             def __init__(self, bot_obj):
                 super().__init__()
                 self.bot = bot_obj
             async def on_submit(self, modal_inter: discord.Interaction):
-                img = self.url.value.strip() or "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1000&auto=format&fit=crop"
-                self.bot.db[modal_inter.guild.id]['banner_url'] = img
-                await modal_inter.response.send_message("🎉 ممتاز! تم إعداد نظام الترحيب بالكامل (القناة، القوانين، والبنر المخصص جاهزون).", ephemeral=True)
+                # وضع صورة البوت الخاصة بك كافتراضي
+                img = self.url.value.strip() or "https://i.postimg.cc/SNrRy2JS/chouaibchou13-pindown-io-1779531490.png"
+                self.bot.db[str(modal_inter.guild.id)]['banner_url'] = img
+                await modal_inter.response.send_message("🎉 ممتاز! تم إعداد نظام الترحيب بالكامل ولن تواجه أي أخطاء الآن.", ephemeral=True)
 
         await interaction.response.send_modal(BannerModal(self.bot))
 
@@ -158,7 +161,7 @@ class LogSetupView(View):
 
     @discord.ui.select(cls=discord.ui.ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="اختر قناة السجلات والتقارير...")
     async def select_log_channel(self, interaction: discord.Interaction, select: discord.ui.ChannelSelect):
-        g_id = interaction.guild.id
+        g_id = str(interaction.guild.id)
         if g_id not in self.bot.db: self.bot.db[g_id] = {}
         self.bot.db[g_id]['log_channel'] = select.values[0].id
         await interaction.response.send_message(f"⚙️ تم تفعيل سجل الأحداث الفوري بنجاح في قناة: {select.values[0].mention}", ephemeral=True)
@@ -172,7 +175,7 @@ class AutoRoleSetupView(View):
 
     @discord.ui.select(cls=discord.ui.RoleSelect, placeholder="اختر الرتبة التلقائية للأعضاء الجدد...")
     async def select_auto_role(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
-        g_id = interaction.guild.id
+        g_id = str(interaction.guild.id)
         if g_id not in self.bot.db: self.bot.db[g_id] = {}
         self.bot.db[g_id]['auto_role'] = select.values[0].id
         await interaction.response.send_message(f"🏷️ تم تعيين رتبة {select.values[0].name} لتُعطى تلقائياً لأي عضو ينضم للسيرفر!", ephemeral=True)
